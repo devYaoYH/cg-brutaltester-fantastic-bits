@@ -132,6 +132,7 @@ public class OldGameThread extends Thread {
                 referee.getOut().flush();
 
                 // Starting communication with referee player
+                while (!referee.getIn().hasNextLine()) {}
                 String line = referee.getIn().nextLine();
                 Matcher m = HEADER_PATTERN.matcher(line);
                 if (!m.matches()) throw new RuntimeException("Error in data received from referee");
@@ -233,6 +234,7 @@ public class OldGameThread extends Thread {
                     }
 
                     // Next line from referee
+                    while (!referee.getIn().hasNextLine()) {}
                     line = referee.getIn().nextLine();
                     m = HEADER_PATTERN.matcher(line);
                     if (!m.matches()) throw new RuntimeException("Error in data received from referee");
