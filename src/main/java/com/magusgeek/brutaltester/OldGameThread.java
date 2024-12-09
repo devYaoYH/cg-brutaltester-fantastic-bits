@@ -36,6 +36,7 @@ public class OldGameThread extends Thread {
     private List<ProcessBuilder> playerBuilders;
     private int game;
     private boolean swap;
+    private boolean minimal_logging;
     private static final Pattern HEADER_PATTERN = Pattern.compile("\\[\\[(?<cmd>.+)\\] ?(?<lineCount>[0-9]+)\\]");
     private static final Pattern SUMMARY_PATTERN = Pattern.compile("\\$(?<player>\\d+) Score: (?<score>\\d+) \\| Magic: (?<magic>\\d+)");
     
@@ -53,13 +54,15 @@ public class OldGameThread extends Thread {
         }
     }
 
-    public OldGameThread(int id, String refereeCmd, List<String> playersCmd, Mutable<Integer> count, PlayerStats playerStats, int n, Path logs, boolean swap) {
+    public OldGameThread(int id, String refereeCmd, List<String> playersCmd, Mutable<Integer> count, PlayerStats playerStats, int n, Path logs, boolean swap,
+                         boolean minimal_logging) {
         super("GameThread " + id);
         this.count = count;
         this.playerStats = playerStats;
         this.n = n;
         this.logs = logs;
         this.swap = swap;
+        this.minimal_logging = minimal_logging;
 
         refereeBuilder = new ProcessBuilder(refereeCmd.split(" "));
         playerBuilders = new ArrayList<>();
@@ -258,7 +261,8 @@ public class OldGameThread extends Thread {
                 }
                 playerStats.add(finalScore);
 
-                LOG.info("End of game " + game + ": " + "\t" + playerStats);
+                if (!minimal_logging)
+                    LOG.info("End of game " + game + ": " + "\t" + playerStats);
             } catch (Exception exception) {
                 LOG.error("Exception in game " + game, exception);
             } finally {

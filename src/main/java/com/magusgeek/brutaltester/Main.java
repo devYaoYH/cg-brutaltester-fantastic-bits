@@ -1,15 +1,23 @@
 package com.magusgeek.brutaltester;
 
-import com.magusgeek.brutaltester.util.Mutable;
-import com.magusgeek.brutaltester.util.SeedGenerator;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.cli.*;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+
+import com.magusgeek.brutaltester.util.Mutable;
+import com.magusgeek.brutaltester.util.SeedGenerator;
 
 public class Main {
 
@@ -18,6 +26,7 @@ public class Main {
     private static PlayerStats playerStats;
     private static int t;
     private static int finished = 0;
+    private static boolean minimal_logging = false;
 
     public static void main(String[] args) {
         try {
@@ -35,7 +44,8 @@ public class Main {
                    .addOption("l", true, "A directory for games logs")
                    .addOption("s", false, "Swap player positions")
                    .addOption("i", true, "Initial seed. For repeatable tests")
-                   .addOption("o", false, "Old mode");
+                   .addOption("o", false, "Old mode")
+                   .addOption("m", false, "Minimal Logging");
 
             CommandLine cmd = new DefaultParser().parse(options, args);
 
@@ -50,10 +60,14 @@ public class Main {
                 Configurator.setRootLevel(Level.ALL);
                 LOG.info("Verbose mode activated");
             }
+            
+            // Minimal logging
+            boolean minimal_logging = cmd.hasOption("m");
 
             // Referee command line
             String refereeCmd = cmd.getOptionValue("r");
-            LOG.info("Referee command line: " + refereeCmd);
+            if (!minimal_logging)
+                LOG.info("Referee command line: " + refereeCmd);
 
             // Players command lines
             List<String> playersCmd = new ArrayList<>();
@@ -62,7 +76,8 @@ public class Main {
 
                 if (value != null) {
                     playersCmd.add(value);
-                    LOG.info("Player " + i + " command line: " + value);
+                    if (!minimal_logging)
+                        LOG.info("Player " + i + " command line: " + value);
                 }
             }
 
@@ -73,7 +88,8 @@ public class Main {
             } catch (Exception exception) {
 
             }
-            LOG.info("Number of games to play: " + n);
+            if (!minimal_logging)
+                LOG.info("Number of games to play: " + n);
 
             // Thread count
             t = 1;
@@ -82,7 +98,8 @@ public class Main {
             } catch (Exception exception) {
 
             }
-            LOG.info("Number of threads to spawn: " + t);
+            if (!minimal_logging)
+                LOG.info("Number of threads to spawn: " + t);
 
             // Logs directory
             Path logs = null;
@@ -98,7 +115,8 @@ public class Main {
             if (cmd.hasOption("i")){
                 long newSeed = Integer.valueOf(cmd.getOptionValue("i"));
                 SeedGenerator.initialSeed(newSeed);
-                LOG.info("Initial Seed: " + newSeed);
+                if (!minimal_logging)
+                    LOG.info("Initial Seed: " + newSeed);
             }
             // Prepare stats objects
             playerStats = new PlayerStats(playersCmd.size());
@@ -107,7 +125,7 @@ public class Main {
             // Start the threads
             for (int i = 0; i < t; ++i) {
             	if (cmd.hasOption("o")) {
-            		new OldGameThread(i + 1, refereeCmd, playersCmd, count, playerStats, n, logs, swap).start();
+            		new OldGameThread(i + 1, refereeCmd, playersCmd, count, playerStats, n, logs, swap, minimal_logging).start();
             	} else {
             		new GameThread(i + 1, refereeCmd, playersCmd, count, playerStats, n, logs, swap).start();
             	}
@@ -123,7 +141,8 @@ public class Main {
             finished += 1;
 
             if (finished >= t) {
-                LOG.info("*** End of games ***");
+                if (!minimal_logging)
+                    LOG.info("*** End of games ***");
                 playerStats.print();
             }
         }
